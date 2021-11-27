@@ -1,4 +1,6 @@
 let app;
+let appWidth = 800;
+let appHeight = 600;
 let bgBack;
 let bg1;
 let bg2;
@@ -14,12 +16,16 @@ let keysDiv;
 let bullets = [];
 let bulletSpeed = 10;
 let isFire = false;
+let isHere = false;
+let numberOfEnemies = 3;
+let firstEnemy;
+let enemies = [];
   
 window.onload = function () {
     app = new PIXI.Application(
         {
-            width: 800,
-            height: 600
+            width: appWidth,
+            height: appHeight
         }
     );
     document.getElementById("gameDiv").appendChild(app.view);
@@ -38,13 +44,13 @@ window.onload = function () {
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
 
-
 }
 
 function gameLoop(delta){
     updateBg();
-    keyHendler();
+    keyHandler();
     updateBullet();
+    updateEnemy();
     
 }
 
@@ -52,8 +58,8 @@ function initLevel(){
     bgBack = createBg(app.loader.resources["bgBack"].texture);
     bg2 = createBg(app.loader.resources["bg2"].texture);
     bgDownGrey = createBg(app.loader.resources["bgDownGrey"].texture);
-    plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bg1 = createBg(app.loader.resources["bg1"].texture);
+    plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
     
     app.ticker.add(gameLoop);
@@ -62,8 +68,8 @@ function initLevel(){
 function createPlayer(texture){
     player = new PIXI.Sprite.from(texture);
     player.anchor.set(0.5);
-    player.x = app.view.width / 8;
-    player.y = app.view.height / 1.5;
+    player.x = appWidth / 8;
+    player.y = appHeight / 1.5;
     player.scale.set(0.25, 0.25);
     console.log(player);
 
@@ -80,9 +86,9 @@ function createBg(texture){
 }
 
 function createBullet(){
-    let bullet = new PIXI.Sprite.from("images/Bullet/Bullet (1).png")
+    let bullet = new PIXI.Sprite.from("images/Bullet/Bullet (1).png");
     bullet.anchor.set(0.5);
-    bullet.x = player.x + player.width/4;;
+    bullet.x = player.x + player.width/4;
     bullet.y = player.y + player.height/4;
     bullet.speed = bulletSpeed;
     bullet.scale.set(0.25, 0.25);
@@ -90,6 +96,18 @@ function createBullet(){
 
     return bullet;
 }
+
+function createEnemy(){
+    let pinkEnemy = new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-1.png");
+    pinkEnemy.anchor.set(0.5);
+    pinkEnemy.x = appWidth + pinkEnemy.width*1.5;
+    pinkEnemy.y = Math.floor(Math.random() * (appHeight/1.2)) + pinkEnemy.height/2;
+    pinkEnemy.scale.set(0.35, 0.35);
+    app.stage.addChild(pinkEnemy);
+      
+    return pinkEnemy;
+}
+
 function updateBg(){
     bgX = (bgX - bgSpeed);
     bg1.tilePosition.x = bgX;
@@ -101,30 +119,59 @@ function updateBg(){
 function updateBullet(){
     for(let i = 0; i < bullets.length; i++){
         bullets[i].position.x += bullets[i].speed;
+
+        // bullet is off-screen
         if(bullets[i].position.x > 800){
             bullets[i].dead = true;
         }
     }
+
+    // remove bullet from stage and bullets[]
     for(let i = 0; i < bullets.length; i++){
         if(bullets[i].dead){
             app.stage.removeChild(bullets[i]);
             bullets.splice(i, 1);
         }
-        
     }
 }
 
-// wcisniecie klawisza
+function updateEnemy(){
+    if(enemies.length < numberOfEnemies  && !isHere) {
+        isHere = true;
+        setTimeout(()=>{
+            let enemy = createEnemy();
+            enemies.push(enemy);
+            isHere = false;
+        }, 2000)
+    }
+
+    for(let i = 0; i < enemies.length; i++){
+        enemies[i].position.x -= 2;
+
+        // enemy is off-screen
+        if(enemies[i].position.x < -enemies[i].width){
+            enemies[i].dead = true;
+        }
+    }
+
+    // remove enemy
+    for(let i = 0; i < enemies.length; i++){
+        if(enemies[i].dead){
+            app.stage.removeChild(enemies[i]);
+            enemies.splice(i, 1);
+        }
+    }
+}
+
 function keyDown (e) {
     keys[e.keyCode] = true;
 }
 
-// puszczenie klawisza
 function keyUp (e) {
     keys[e.keyCode] = false;
 }
 
-function keyHendler(){
+function keyHandler(){
     if(keys["40"]){
         if((player.y + player.height/2) <= 600 - 5){
             player.y += 5;
@@ -142,12 +189,5 @@ function keyHendler(){
             bullets.push(bullet);
             isFire = false;
         }, 100)
-        
     }
 }
-
-
-
-
-
-
