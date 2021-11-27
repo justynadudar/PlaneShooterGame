@@ -11,7 +11,10 @@ let planeSheet = {};
 let player;
 let keys = {};
 let keysDiv;
-
+let bullets = [];
+let bulletSpeed = 10;
+let isFire = false;
+  
 window.onload = function () {
     app = new PIXI.Application(
         {
@@ -31,26 +34,24 @@ window.onload = function () {
     app.loader.onComplete.add(initLevel);
     app.loader.load();
     
-
     // keybord event handlers
-    //keyDown code 40
     window.addEventListener("keydown", keyDown);
-    //keyDown code 38
     window.addEventListener("keyup", keyUp);
+
 
 }
 
 function gameLoop(delta){
     updateBg();
     keyHendler();
+    updateBullet();
+    
 }
 
 function initLevel(){
     bgBack = createBg(app.loader.resources["bgBack"].texture);
     bg2 = createBg(app.loader.resources["bg2"].texture);
-    
     bgDownGrey = createBg(app.loader.resources["bgDownGrey"].texture);
-    
     plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bg1 = createBg(app.loader.resources["bg1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
@@ -78,6 +79,17 @@ function createBg(texture){
     return tiling;
 }
 
+function createBullet(){
+    let bullet = new PIXI.Sprite.from("images/Bullet/Bullet (1).png")
+    bullet.anchor.set(0.5);
+    bullet.x = player.x + player.width/4;;
+    bullet.y = player.y + player.height/4;
+    bullet.speed = bulletSpeed;
+    bullet.scale.set(0.25, 0.25);
+    app.stage.addChild(bullet);
+
+    return bullet;
+}
 function updateBg(){
     bgX = (bgX - bgSpeed);
     bg1.tilePosition.x = bgX;
@@ -86,21 +98,54 @@ function updateBg(){
     bgDownGrey.tilePosition.x = bgX / 7 - 200;
 }
 
+function updateBullet(){
+    for(let i = 0; i < bullets.length; i++){
+        bullets[i].position.x += bullets[i].speed;
+        if(bullets[i].position.x > 800){
+            bullets[i].dead = true;
+        }
+    }
+    for(let i = 0; i < bullets.length; i++){
+        if(bullets[i].dead){
+            app.stage.removeChild(bullets[i]);
+            bullets.splice(i, 1);
+        }
+        
+    }
+}
+
+// wcisniecie klawisza
 function keyDown (e) {
     keys[e.keyCode] = true;
 }
+
+// puszczenie klawisza
 function keyUp (e) {
     keys[e.keyCode] = false;
 }
 
 function keyHendler(){
     if(keys["40"]){
-        player.y += 5;
+        if((player.y + player.height/2) <= 600 - 5){
+            player.y += 5;
+        }
     }
     if(keys["38"]){
-        player.y -= 5;
+        if((player.y - player.height/2) > 0 + 5){
+            player.y -= 5;
+        }
+    }
+    if(keys["32"] && !isFire){
+        isFire = true;
+        setTimeout(()=>{
+            let bullet = createBullet();
+            bullets.push(bullet);
+            isFire = false;
+        }, 100)
+        
     }
 }
+
 
 
 
