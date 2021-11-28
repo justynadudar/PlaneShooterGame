@@ -11,15 +11,16 @@ let bgSpeed = 1;
 let plane1;
 let planeSheet = {};
 let player;
+let playerScore = 10;
 let keys = {};
 let keysDiv;
 let bullets = [];
 let bulletSpeed = 10;
 let isFire = false;
 let isHere = false;
-let numberOfEnemies = 3;
-let firstEnemy;
+let numberOfEnemies = 30;
 let enemies = [];
+let enemySpeed = 2;
   
 window.onload = function () {
     app = new PIXI.Application(
@@ -100,9 +101,11 @@ function createBullet(){
 function createEnemy(){
     let pinkEnemy = new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-1.png");
     pinkEnemy.anchor.set(0.5);
-    pinkEnemy.x = appWidth + pinkEnemy.width*1.5;
-    pinkEnemy.y = Math.floor(Math.random() * (appHeight/1.2)) + pinkEnemy.height/2;
+    pinkEnemy.x = appWidth + 100;
+    pinkEnemy.y = Math.floor(Math.random() * (appHeight/1.4)) + 75;
     pinkEnemy.scale.set(0.35, 0.35);
+    pinkEnemy.speed = enemySpeed;
+    pinkEnemy.life = 3;
     app.stage.addChild(pinkEnemy);
       
     return pinkEnemy;
@@ -124,6 +127,8 @@ function updateBullet(){
         if(bullets[i].position.x > 800){
             bullets[i].dead = true;
         }
+
+        collisionWithBullet(bullets[i]);
     }
 
     // remove bullet from stage and bullets[]
@@ -146,17 +151,20 @@ function updateEnemy(){
     }
 
     for(let i = 0; i < enemies.length; i++){
-        enemies[i].position.x -= 2;
+        enemies[i].position.x -= enemies[i].speed;
 
         // enemy is off-screen
         if(enemies[i].position.x < -enemies[i].width){
             enemies[i].dead = true;
         }
+
+        //collision detection
+        collision(enemies[i])
     }
 
     // remove enemy
     for(let i = 0; i < enemies.length; i++){
-        if(enemies[i].dead){
+        if(enemies[i].dead || enemies[i].life == 0){
             app.stage.removeChild(enemies[i]);
             enemies.splice(i, 1);
         }
@@ -182,12 +190,37 @@ function keyHandler(){
             player.y -= 5;
         }
     }
-    if(keys["32"] && !isFire){
+    if(keys["32"] && !isFire && playerScore > 2){
         isFire = true;
         setTimeout(()=>{
             let bullet = createBullet();
+            playerScore -= 2;
             bullets.push(bullet);
             isFire = false;
         }, 100)
     }
+}
+
+function collision(enemy){
+    //player dead
+    if((player.position.x + player.width/2) >= (enemy.position.x - enemy.width/2) &&
+        ((player.position.y - player.height/2) <= (enemy.position.y + enemy.height/2) &&
+        (player.position.y + player.height/2) >= (enemy.position.y - enemy.height/2))){
+            playerScore -= 10;
+    }
+    
+
+}
+
+function collisionWithBullet(bullet){
+    for(let i = 0; i < enemies.length; i++){
+        if((bullet.position.x + bullet.width/2) >= (enemies[i].position.x) &&
+    ((bullet.position.y - bullet.height/2) <= (enemies[i].position.y + enemies[i].height/2) &&
+    (bullet.position.y + bullet.height/2) >= (enemies[i].position.y - enemies[i].height/2))){
+        enemies[i].life -= 1;
+        bullet.dead = true;
+        playerScore += 5;
+        }
+    }
+    
 }
