@@ -12,15 +12,16 @@ let plane1;
 let planeSheet = {};
 let player;
 let playerScore = 10;
+let playerScoreObject;
 let keys = {};
 let keysDiv;
 let bullets = [];
 let bulletSpeed = 10;
 let isFire = false;
 let isHere = false;
-let numberOfEnemies = 30;
+let numberOfEnemies = 5;
 let enemies = [];
-let enemySpeed = 2;
+let enemySpeed = 3;
   
 window.onload = function () {
     app = new PIXI.Application(
@@ -40,11 +41,6 @@ window.onload = function () {
         .add("bgDownGrey", "images/bg_down_grey.png");
     app.loader.onComplete.add(initLevel);
     app.loader.load();
-    
-    // keybord event handlers
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
-
 }
 
 function gameLoop(delta){
@@ -52,7 +48,8 @@ function gameLoop(delta){
     keyHandler();
     updateBullet();
     updateEnemy();
-    
+    updateScore();
+    updatePlayer();
 }
 
 function initLevel(){
@@ -62,7 +59,12 @@ function initLevel(){
     bg1 = createBg(app.loader.resources["bg1"].texture);
     plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
-    
+    playerScoreObject = createText();
+   
+    // keybord event handlers
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+
     app.ticker.add(gameLoop);
 }
 
@@ -98,7 +100,12 @@ function createBullet(){
     return bullet;
 }
 
-function createEnemy(){
+function createEnemy(option){
+    if(option == 1) return createPinkEnemy();
+    if(option == 2) return createGreenEnemy();
+}
+
+function createPinkEnemy(){
     let pinkEnemy = new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-1.png");
     pinkEnemy.anchor.set(0.5);
     pinkEnemy.x = appWidth + 100;
@@ -111,12 +118,57 @@ function createEnemy(){
     return pinkEnemy;
 }
 
+function createGreenEnemy(){
+    let greenEnemy = new PIXI.Sprite.from("images/Enemy/greenEnemy/fly/frame-1.png");
+    greenEnemy.anchor.set(0.5);
+    greenEnemy.x = appWidth + 100;
+    greenEnemy.y = Math.floor(Math.random() * (appHeight/1.4)) + 75;
+    greenEnemy.scale.set(0.35, 0.35);
+    greenEnemy.speed = enemySpeed;
+    greenEnemy.life = 5;
+    app.stage.addChild(greenEnemy);
+      
+    return greenEnemy;
+}
+
+function createText(){
+    let scoreText =  new PIXI.Text('Score: ');
+    scoreText.anchor.set(0.5);
+    scoreText.x = 50;
+    scoreText.y = appHeight - 40;
+    app.stage.addChild(scoreText);
+    scoreText.style = new PIXI.TextStyle({
+        fill: 0x350000,
+        fontSize: 21,
+        fontFamily: 'Addis',
+    });
+
+    let text = new PIXI.Text(playerScore);
+    text.anchor.set(0.5);
+    text.x = 50;
+    text.y = appHeight - 15;
+    app.stage.addChild(text);
+    text.style = new PIXI.TextStyle({
+        fill: 0x350000,
+        fontSize: 18,
+        fontFamily: 'Addis',
+    });
+
+    return text;
+}
+
 function updateBg(){
     bgX = (bgX - bgSpeed);
     bg1.tilePosition.x = bgX;
     bg2.tilePosition.x = bgX / 3;
     bgDownWhite.tilePosition.x = bgX / 5;
     bgDownGrey.tilePosition.x = bgX / 7 - 200;
+}
+
+function updatePlayer(){
+    if(player.dead){
+        app.stage.removeChild(player);
+    }
 }
 
 function updateBullet(){
@@ -144,7 +196,7 @@ function updateEnemy(){
     if(enemies.length < numberOfEnemies  && !isHere) {
         isHere = true;
         setTimeout(()=>{
-            let enemy = createEnemy();
+            let enemy = createEnemy(Math.floor(Math.random() * 2) + 1);
             enemies.push(enemy);
             isHere = false;
         }, 2000)
@@ -169,6 +221,10 @@ function updateEnemy(){
             enemies.splice(i, 1);
         }
     }
+}
+
+function updateScore(){
+    playerScoreObject.text = playerScore;
 }
 
 function keyDown (e) {
@@ -206,7 +262,7 @@ function collision(enemy){
     if((player.position.x + player.width/2) >= (enemy.position.x - enemy.width/2) &&
         ((player.position.y - player.height/2) <= (enemy.position.y + enemy.height/2) &&
         (player.position.y + player.height/2) >= (enemy.position.y - enemy.height/2))){
-            playerScore -= 10;
+            player.dead = true;
     }
     
 

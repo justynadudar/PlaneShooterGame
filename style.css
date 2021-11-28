@@ -5,3 +5,13 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+@font-face {
+    font-family: 'Addis';
+    src: url('fonts/Addis Ababa.ttf');
+}
+
+#useFont {
+    font-family: 'Addis';
+    font-size: 18px;
+}
