@@ -10,6 +10,8 @@ let bgX = 0;
 let bgSpeed = 1;
 let plane1;
 let planeSheet = {};
+let pinkEnemySheet = {};
+let greenEnemySheet = {};
 let player;
 let playerScore = 10;
 let playerScoreObject;
@@ -19,7 +21,7 @@ let bullets = [];
 let bulletSpeed = 10;
 let isFire = false;
 let isHere = false;
-let numberOfEnemies = 5;
+let numberOfEnemies = 3;
 let enemies = [];
 let enemySpeed = 3;
   
@@ -57,6 +59,9 @@ function initLevel(){
     bg2 = createBg(app.loader.resources["bg2"].texture);
     bgDownGrey = createBg(app.loader.resources["bgDownGrey"].texture);
     bg1 = createBg(app.loader.resources["bg1"].texture);
+    createPlayerSheet();
+    createPinkEnemySheet();
+    createGreenEnemySheet();
     plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
     playerScoreObject = createText();
@@ -68,15 +73,51 @@ function initLevel(){
     app.ticker.add(gameLoop);
 }
 
+function createPlayerSheet(){
+    planeSheet["flying"] = [
+        new PIXI.Sprite.from("images/Plane/Fly (1).png").texture,
+        new PIXI.Sprite.from("images/Plane/Fly (2).png").texture
+    ];
+} 
+
+function createPinkEnemySheet(){
+    pinkEnemySheet["flying"] = [
+        new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-1.png").texture,
+        new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-2.png").texture
+    ];
+
+    pinkEnemySheet["gotHit"] = [
+        new PIXI.Sprite.from("images/Enemy/pinkEnemy/got hit/frame-1.png").texture,
+        new PIXI.Sprite.from("images/Enemy/pinkEnemy/got hit/frame-2.png").texture
+    ];
+
+    pinkEnemySheet["dead"] = [
+        new PIXI.Sprite.from("images/Enemy/pinkEnemy/got hit/frame-3.png").texture
+    ];
+
+} 
+
+function createGreenEnemySheet(){
+    greenEnemySheet["flying"] = [
+        new PIXI.Sprite.from("images/Enemy/greenEnemy/fly/frame-1.png").texture,
+        new PIXI.Sprite.from("images/Enemy/greenEnemy/fly/frame-2.png").texture
+    ];
+
+    greenEnemySheet['gotHit'] = [
+        new PIXI.Sprite.from("images/Enemy/greenEnemy/got hit/frame-1.png").texture,
+        new PIXI.Sprite.from("images/Enemy/greenEnemy/got hit/frame-2.png").texture
+    ]
+}
+
 function createPlayer(texture){
-    player = new PIXI.Sprite.from(texture);
+    player = new PIXI.AnimatedSprite(planeSheet.flying);
     player.anchor.set(0.5);
+    player.animationSpeed = .3;
     player.x = appWidth / 8;
     player.y = appHeight / 1.5;
     player.scale.set(0.25, 0.25);
-    console.log(player);
-
     app.stage.addChild(player);
+    player.play();
 
 }
 
@@ -106,28 +147,37 @@ function createEnemy(option){
 }
 
 function createPinkEnemy(){
-    let pinkEnemy = new PIXI.Sprite.from("images/Enemy/pinkEnemy/fly/frame-1.png");
+    let pinkEnemy = new PIXI.AnimatedSprite(pinkEnemySheet.flying);
+    pinkEnemy.sheet = pinkEnemySheet;
+    pinkEnemy.isHit = false;
     pinkEnemy.anchor.set(0.5);
+    pinkEnemy.animationSpeed = 0.1;
+    pinkEnemy.loop = true;
     pinkEnemy.x = appWidth + 100;
     pinkEnemy.y = Math.floor(Math.random() * (appHeight/1.4)) + 75;
     pinkEnemy.scale.set(0.35, 0.35);
     pinkEnemy.speed = enemySpeed;
     pinkEnemy.life = 3;
+    pinkEnemy.color = 'pink';
     app.stage.addChild(pinkEnemy);
-      
+    pinkEnemy.play();
     return pinkEnemy;
 }
 
 function createGreenEnemy(){
-    let greenEnemy = new PIXI.Sprite.from("images/Enemy/greenEnemy/fly/frame-1.png");
+    let greenEnemy = new PIXI.AnimatedSprite(greenEnemySheet.flying);
+    greenEnemy.sheet = greenEnemySheet;
+    greenEnemy.isHit = false;
     greenEnemy.anchor.set(0.5);
+    greenEnemy.animationSpeed = .15;
     greenEnemy.x = appWidth + 100;
     greenEnemy.y = Math.floor(Math.random() * (appHeight/1.4)) + 75;
     greenEnemy.scale.set(0.35, 0.35);
-    greenEnemy.speed = enemySpeed;
+    greenEnemy.speed = enemySpeed + 1;
     greenEnemy.life = 5;
+    greenEnemy.color = 'green';
     app.stage.addChild(greenEnemy);
-      
+    greenEnemy.play();
     return greenEnemy;
 }
 
@@ -201,9 +251,19 @@ function updateEnemy(){
             isHere = false;
         }, 2000)
     }
+    
 
     for(let i = 0; i < enemies.length; i++){
         enemies[i].position.x -= enemies[i].speed;
+
+        //enemy got hit
+        if(enemies[i].isHit){
+            enemies[i].isHit = false;
+            setTimeout(()=>{
+                enemies[i].textures = enemies[i].sheet.flying;
+                enemies[i].play();
+            }, 500)
+        }
 
         // enemy is off-screen
         if(enemies[i].position.x < -enemies[i].width){
@@ -216,11 +276,28 @@ function updateEnemy(){
 
     // remove enemy
     for(let i = 0; i < enemies.length; i++){
-        if(enemies[i].dead || enemies[i].life == 0){
+        if(enemies[i].dead){
             app.stage.removeChild(enemies[i]);
             enemies.splice(i, 1);
         }
+        if(enemies[i].life < 0){
+            enemies[i].textures = enemies[i].sheet.dead;
+            enemies[i].play();
+            playerScore += 10;
+            fallEnemy(enemies[i], i);
+           
+        }
     }
+}
+
+function fallEnemy(enemy, i){
+    enemy.y += 6;
+    enemy.rotate = 2;
+    if(enemy.y > appHeight){
+        app.stage.removeChild(enemy);
+        enemies.splice(i, 1);
+    }
+
 }
 
 function updateScore(){
@@ -246,20 +323,20 @@ function keyHandler(){
             player.y -= 5;
         }
     }
-    if(keys["32"] && !isFire && playerScore > 2){
+    if(keys["32"] && !isFire && playerScore > 0){
         isFire = true;
         setTimeout(()=>{
             let bullet = createBullet();
             playerScore -= 2;
             bullets.push(bullet);
             isFire = false;
-        }, 100)
+        }, 200)
     }
 }
 
 function collision(enemy){
     //player dead
-    if((player.position.x + player.width/2) >= (enemy.position.x - enemy.width/2) &&
+    if(enemy.life > 0 && (player.position.x + player.width/2) >= (enemy.position.x - enemy.width/2) &&
         ((player.position.y - player.height/2) <= (enemy.position.y + enemy.height/2) &&
         (player.position.y + player.height/2) >= (enemy.position.y - enemy.height/2))){
             player.dead = true;
@@ -273,9 +350,11 @@ function collisionWithBullet(bullet){
         if((bullet.position.x + bullet.width/2) >= (enemies[i].position.x) &&
     ((bullet.position.y - bullet.height/2) <= (enemies[i].position.y + enemies[i].height/2) &&
     (bullet.position.y + bullet.height/2) >= (enemies[i].position.y - enemies[i].height/2))){
+        enemies[i].textures = enemies[i].sheet.gotHit;
+        enemies[i].play();
+        enemies[i].isHit = true;
         enemies[i].life -= 1;
         bullet.dead = true;
-        playerScore += 5;
         }
     }
     
