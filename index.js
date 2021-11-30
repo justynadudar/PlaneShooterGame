@@ -19,6 +19,8 @@ let greenEnemySheet = {};
 let player;
 let startPlayerScore = 10;
 let playerScoreObject;
+let numberOfLifes = 3;
+let hearts = [];
 let keys = {};
 let keysDiv;
 let bullets = [];
@@ -27,7 +29,7 @@ let isFire = false;
 let isHere = false;
 let numberOfEnemies = 3;
 let enemies = [];
-let enemySpeed = 0.5;
+let enemySpeed = 1;
   
 window.onload = function () {
     app = new PIXI.Application(
@@ -52,7 +54,8 @@ window.onload = function () {
     mainScreen = new PIXI.Container();
     endScreen = new PIXI.Container();
     createTitleScreen();
-    //createEndScreen();
+    // createEndScreen();
+    // createMainScreen();
 }
 
 function createTitleScreen(){
@@ -86,8 +89,8 @@ function createMainScreen(){
     createGreenEnemySheet();
     plane1 = createPlayer(app.loader.resources["plane1"].texture);
     if(playerScoreObject == null) playerScoreObject = createText();
-    
-        
+    createHearts();
+
     // keybord event handlers
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
@@ -119,6 +122,11 @@ function createEndScreen(){
     endScreen.addChild(playAgainButton);
 
     playAgainButton.on("click", () =>{
+        // remove enemy
+        for(let i = 0; i < enemies.length; i++){
+            mainScreen.removeChild(enemies[i]);
+            enemies.splice(i, 1);    
+        }
         createMainScreen();
     })
 }
@@ -128,9 +136,10 @@ function gameLoop(delta){
     if(mainScreen.visible == true ){
         keyHandler();
         updateBullet();
+        updateHearts();
         updateEnemy();
         updateScore();
-        updatePlayer();
+        updatePlayer();  
     }
     
 }
@@ -142,6 +151,9 @@ function initLevel(){
     bg1 = createBg(app.loader.resources["bg1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
 
+    app.stage.addChild(titleScreen);
+    app.stage.addChild(mainScreen);
+    app.stage.addChild(endScreen);
 
     app.ticker.add(gameLoop);
 }
@@ -207,9 +219,7 @@ function createBg(texture){
     let tiling = new PIXI.TilingSprite(texture, 800, 600);
     tiling.position.set(0,0);
     app.stage.addChild(tiling);
-    app.stage.addChild(titleScreen);
-    app.stage.addChild(mainScreen);
-    app.stage.addChild(endScreen);
+    
 
     return tiling;
 }
@@ -227,8 +237,8 @@ function createBullet(){
 }
 
 function createEnemy(option){
-    if(option == 1) return createPinkEnemy();
-    if(option == 2) return createGreenEnemy();
+    if(option <= 9) return createPinkEnemy();
+    if(option == 10) return createGreenEnemy();
 }
 
 function createPinkEnemy(){
@@ -292,6 +302,18 @@ function createText(){
     return text;
 }
 
+function createHearts(){
+    for(let i = 0; i < numberOfLifes; i++){
+       let heart = new PIXI.Sprite.from("images/playerHeart.png");
+        heart.anchor.set(0.5);
+        heart.x = appWidth + 20 - i*50;
+        heart.y = appHeight - 25;
+        heart.scale.set(0.4, 0.4);
+        hearts[i] = heart;
+        mainScreen.addChild(heart); 
+    }
+}
+
 function updateBg(){
     bgX = (bgX - bgSpeed);
     bg1.tilePosition.x = bgX;
@@ -337,7 +359,7 @@ function updateEnemy(){
     if(enemies.length < numberOfEnemies  && !isHere) {
         isHere = true;
         setTimeout(()=>{
-            let enemy = createEnemy(Math.floor(Math.random() * 2) + 1);
+            let enemy = createEnemy(Math.floor(Math.random() * 10) + 1);
             enemies.push(enemy);
             isHere = false;
         }, 2000)
@@ -371,12 +393,28 @@ function updateEnemy(){
             mainScreen.removeChild(enemies[i]);
             enemies.splice(i, 1);
         }
+        else if(enemies[i].life <= 0 && enemies[i].couseOfDeath != 1 && enemies[i].couseOfDeath != 2){
+            if( enemies[i].color == 'green'){
+                playerScore += 45;
+            }else{
+                playerScore += 15;
+            }
+            
+            enemies[i].couseOfDeath = 2;
+            
+        }
         else if(enemies[i].life <= 0){
             enemies[i].textures = enemies[i].sheet.dead;
             enemies[i].play();
-            playerScore += 10;
             fallEnemy(enemies[i], i);
         }
+    }
+}
+
+function updateHearts(){
+    if(hearts.length > 0 && hearts[hearts.length - 1].dead){
+        mainScreen.removeChild(hearts[hearts.length - 1]);
+        hearts.splice(hearts.length - 1, 1);
     }
 }
 
@@ -424,15 +462,22 @@ function keyHandler(){
 }
 
 function collision(enemy){
-    //player dead
     if(enemy.life > 0 && (player.position.x + player.width/2) >= (enemy.position.x - enemy.width/2) &&
         ((player.position.y - player.height/2) <= (enemy.position.y + enemy.height/2) &&
         (player.position.y + player.height/2) >= (enemy.position.y - enemy.height/2))){
-            player.dead = true;
-            player.textures = planeSheet.dead;
+            if(hearts.length == 1){
+                hearts[hearts.length - 1].dead = true;
+                player.dead = true;
+                player.textures = planeSheet.dead; 
+                enemy.couseOfDeath = 1;
+            }
+            if(hearts.length > 1){
+                hearts[hearts.length - 1].dead = true;
+                enemy.life = 0;
+                enemy.couseOfDeath = 1;
+            }       
     }
     
-
 }
 
 function collisionWithBullet(bullet){
