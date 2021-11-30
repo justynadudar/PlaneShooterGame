@@ -1,4 +1,8 @@
 let app;
+let titleScreen;
+let mainScreen;
+let endScreen;
+let playButton;
 let appWidth = 800;
 let appHeight = 600;
 let bgBack;
@@ -13,7 +17,7 @@ let planeSheet = {};
 let pinkEnemySheet = {};
 let greenEnemySheet = {};
 let player;
-let playerScore = 10;
+let startPlayerScore = 10;
 let playerScoreObject;
 let keys = {};
 let keysDiv;
@@ -23,7 +27,7 @@ let isFire = false;
 let isHere = false;
 let numberOfEnemies = 3;
 let enemies = [];
-let enemySpeed = 3;
+let enemySpeed = 0.5;
   
 window.onload = function () {
     app = new PIXI.Application(
@@ -43,15 +47,92 @@ window.onload = function () {
         .add("bgDownGrey", "images/bg_down_grey.png");
     app.loader.onComplete.add(initLevel);
     app.loader.load();
+
+    titleScreen = new PIXI.Container();
+    mainScreen = new PIXI.Container();
+    endScreen = new PIXI.Container();
+    createTitleScreen();
+    //createEndScreen();
+}
+
+function createTitleScreen(){
+    
+    titleScreen.visible = true;
+    mainScreen.visible = false;
+    endScreen.visible = false;
+
+    let button = new PIXI.Sprite.from("images/playButton.png");
+    button.anchor.set(0.5);
+    button.x = appWidth / 2;
+    button.y = appHeight / 2.5;
+    button.scale.set(2, 2);
+    button.interactive = true;
+    button.buttonMode = true;
+    button.defaultCursor = 'pointer';
+    titleScreen.addChild(button);
+
+     button.on("click", () =>{
+        createMainScreen();
+    })
+}
+
+function createMainScreen(){
+    titleScreen.visible = false;
+    mainScreen.visible = true;
+    endScreen.visible = false;
+
+    createPlayerSheet();
+    createPinkEnemySheet();
+    createGreenEnemySheet();
+    plane1 = createPlayer(app.loader.resources["plane1"].texture);
+    if(playerScoreObject == null) playerScoreObject = createText();
+    
+        
+    // keybord event handlers
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+
+    app.ticker.add(gameLoop);
+
+}
+
+function createEndScreen(){
+    titleScreen.visible = false;
+    mainScreen.visible = false;
+    endScreen.visible = true;
+
+    let loseElement = new PIXI.Sprite.from("images/youLose.png");
+    loseElement.anchor.set(0.5);
+    loseElement.x = appWidth / 2;
+    loseElement.y = appHeight / 2.5;
+    loseElement.scale.set(1, 1);
+    endScreen.addChild(loseElement);
+
+    let playAgainButton = new PIXI.Sprite.from("images/playAgain.png");
+    playAgainButton.anchor.set(0.5);
+    playAgainButton.x = appWidth / 2;
+    playAgainButton.y = appHeight / 1.5;
+    playAgainButton.scale.set(0.8, 0.8);
+    playAgainButton.interactive = true;
+    playAgainButton.buttonMode = true;
+    playAgainButton.defaultCursor = 'pointer';
+    endScreen.addChild(playAgainButton);
+
+    playAgainButton.on("click", () =>{
+        createMainScreen();
+    })
 }
 
 function gameLoop(delta){
     updateBg();
-    keyHandler();
-    updateBullet();
-    updateEnemy();
-    updateScore();
-    updatePlayer();
+    if(mainScreen.visible == true ){
+        keyHandler();
+        updateBullet();
+        updateEnemy();
+        updateScore();
+        updatePlayer();
+    }
+    
 }
 
 function initLevel(){
@@ -59,16 +140,8 @@ function initLevel(){
     bg2 = createBg(app.loader.resources["bg2"].texture);
     bgDownGrey = createBg(app.loader.resources["bgDownGrey"].texture);
     bg1 = createBg(app.loader.resources["bg1"].texture);
-    createPlayerSheet();
-    createPinkEnemySheet();
-    createGreenEnemySheet();
-    plane1 = createPlayer(app.loader.resources["plane1"].texture);
     bgDownWhite = createBg(app.loader.resources["bgDownWhite"].texture);
-    playerScoreObject = createText();
-   
-    // keybord event handlers
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+
 
     app.ticker.add(gameLoop);
 }
@@ -77,6 +150,10 @@ function createPlayerSheet(){
     planeSheet["flying"] = [
         new PIXI.Sprite.from("images/Plane/Fly (1).png").texture,
         new PIXI.Sprite.from("images/Plane/Fly (2).png").texture
+    ];
+
+    planeSheet["dead"] = [
+        new PIXI.Sprite.from("images/Plane/Dead (1).png").texture
     ];
 } 
 
@@ -106,7 +183,11 @@ function createGreenEnemySheet(){
     greenEnemySheet['gotHit'] = [
         new PIXI.Sprite.from("images/Enemy/greenEnemy/got hit/frame-1.png").texture,
         new PIXI.Sprite.from("images/Enemy/greenEnemy/got hit/frame-2.png").texture
-    ]
+    ];
+
+    greenEnemySheet["dead"] = [
+        new PIXI.Sprite.from("images/Enemy/greenEnemy/got hit/frame-3.png").texture
+    ];
 }
 
 function createPlayer(texture){
@@ -116,7 +197,8 @@ function createPlayer(texture){
     player.x = appWidth / 8;
     player.y = appHeight / 1.5;
     player.scale.set(0.25, 0.25);
-    app.stage.addChild(player);
+    playerScore = startPlayerScore;
+    mainScreen.addChild(player);
     player.play();
 
 }
@@ -125,6 +207,9 @@ function createBg(texture){
     let tiling = new PIXI.TilingSprite(texture, 800, 600);
     tiling.position.set(0,0);
     app.stage.addChild(tiling);
+    app.stage.addChild(titleScreen);
+    app.stage.addChild(mainScreen);
+    app.stage.addChild(endScreen);
 
     return tiling;
 }
@@ -136,7 +221,7 @@ function createBullet(){
     bullet.y = player.y + player.height/4;
     bullet.speed = bulletSpeed;
     bullet.scale.set(0.25, 0.25);
-    app.stage.addChild(bullet);
+    mainScreen.addChild(bullet);
 
     return bullet;
 }
@@ -159,7 +244,7 @@ function createPinkEnemy(){
     pinkEnemy.speed = enemySpeed;
     pinkEnemy.life = 3;
     pinkEnemy.color = 'pink';
-    app.stage.addChild(pinkEnemy);
+    mainScreen.addChild(pinkEnemy);
     pinkEnemy.play();
     return pinkEnemy;
 }
@@ -176,7 +261,7 @@ function createGreenEnemy(){
     greenEnemy.speed = enemySpeed + 1;
     greenEnemy.life = 5;
     greenEnemy.color = 'green';
-    app.stage.addChild(greenEnemy);
+    mainScreen.addChild(greenEnemy);
     greenEnemy.play();
     return greenEnemy;
 }
@@ -186,7 +271,7 @@ function createText(){
     scoreText.anchor.set(0.5);
     scoreText.x = 50;
     scoreText.y = appHeight - 40;
-    app.stage.addChild(scoreText);
+    mainScreen.addChild(scoreText);
     scoreText.style = new PIXI.TextStyle({
         fill: 0x350000,
         fontSize: 21,
@@ -197,7 +282,7 @@ function createText(){
     text.anchor.set(0.5);
     text.x = 50;
     text.y = appHeight - 15;
-    app.stage.addChild(text);
+    mainScreen.addChild(text);
     text.style = new PIXI.TextStyle({
         fill: 0x350000,
         fontSize: 18,
@@ -216,8 +301,14 @@ function updateBg(){
 }
 
 function updatePlayer(){
+    
     if(player.dead){
-        app.stage.removeChild(player);
+        player.y += 1;
+       
+    }
+    if(player.y - player.height > appHeight){
+        mainScreen.removeChild(player);
+        createEndScreen();
     }
 }
 
@@ -236,7 +327,7 @@ function updateBullet(){
     // remove bullet from stage and bullets[]
     for(let i = 0; i < bullets.length; i++){
         if(bullets[i].dead){
-            app.stage.removeChild(bullets[i]);
+            mainScreen.removeChild(bullets[i]);
             bullets.splice(i, 1);
         }
     }
@@ -262,7 +353,7 @@ function updateEnemy(){
             setTimeout(()=>{
                 enemies[i].textures = enemies[i].sheet.flying;
                 enemies[i].play();
-            }, 500)
+            }, 300)
         }
 
         // enemy is off-screen
@@ -277,24 +368,22 @@ function updateEnemy(){
     // remove enemy
     for(let i = 0; i < enemies.length; i++){
         if(enemies[i].dead){
-            app.stage.removeChild(enemies[i]);
+            mainScreen.removeChild(enemies[i]);
             enemies.splice(i, 1);
         }
-        if(enemies[i].life < 0){
+        else if(enemies[i].life <= 0){
             enemies[i].textures = enemies[i].sheet.dead;
             enemies[i].play();
             playerScore += 10;
             fallEnemy(enemies[i], i);
-           
         }
     }
 }
 
 function fallEnemy(enemy, i){
     enemy.y += 6;
-    enemy.rotate = 2;
-    if(enemy.y > appHeight){
-        app.stage.removeChild(enemy);
+    if(enemy.y - enemy.height > appHeight){
+        mainScreen.removeChild(enemy);
         enemies.splice(i, 1);
     }
 
@@ -315,22 +404,22 @@ function keyUp (e) {
 function keyHandler(){
     if(keys["40"]){
         if((player.y + player.height/2) <= 600 - 5){
-            player.y += 5;
+            player.y += 2;
         }
     }
     if(keys["38"]){
         if((player.y - player.height/2) > 0 + 5){
-            player.y -= 5;
+            player.y -= 2;
         }
     }
-    if(keys["32"] && !isFire && playerScore > 0){
+    if(keys["32"] && !isFire && playerScore > 0 && !player.dead){
         isFire = true;
         setTimeout(()=>{
             let bullet = createBullet();
             playerScore -= 2;
             bullets.push(bullet);
             isFire = false;
-        }, 200)
+        }, 300)
     }
 }
 
@@ -340,6 +429,7 @@ function collision(enemy){
         ((player.position.y - player.height/2) <= (enemy.position.y + enemy.height/2) &&
         (player.position.y + player.height/2) >= (enemy.position.y - enemy.height/2))){
             player.dead = true;
+            player.textures = planeSheet.dead;
     }
     
 
