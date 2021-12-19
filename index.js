@@ -32,7 +32,7 @@ let isHereFeather = false;
 let numberOfEnemies = 3;
 let enemies = [];
 let enemySpeed = 1;
-let feather;
+let feathers = [];
 let featherIterator = 0;
 
 window.onload = function () {
@@ -138,7 +138,7 @@ function gameLoop(delta) {
     keyHandler();
     updateBullet();
     updateHearts();
-    //updateEnemy();
+    updateEnemy();
     updateScore();
     updateFeather();
     updatePlayer();
@@ -322,7 +322,7 @@ function createHearts() {
 }
 
 function createFeather() {
-  feather = new PIXI.AnimatedSprite(featherSheet.flying);
+  let feather = new PIXI.AnimatedSprite(featherSheet.flying);
   feather.anchor.set(0.5);
   feather.animationSpeed = 0.06;
   feather.x = Math.floor(Math.random() * 500) + 200;
@@ -442,35 +442,31 @@ function updateHearts() {
 }
 
 function updateFeather() {
-  isHereEnemy = true;
-  setTimeout(() => {
-    let enemy = createEnemy(Math.floor(Math.random() * 10) + 1);
-    enemies.push(enemy);
-    isHereEnemy = false;
-  }, 2000);
-  if (!isHereFeather) {
+  if (feathers.length < 1 && !isHereFeather) {
     isHereFeather = true;
-
     setTimeout(() => {
-      feather = createFeather();
-      isHereEnemy = false;
-    }, 5000);
+      let feather = createFeather();
+      feathers.push(feather);
+      isHereFeather = false;
+    }, Math.floor(Math.random() * 4000) + 2000);
   }
-  if (feather) {
-    feather.y += 0.5;
 
-    if (feather.isHit) {
+  for (let i = 0; i < feathers.length; i++) {
+    feathers[0].position.y += 0.5;
+
+    if (feathers[0].isHit) {
       playerScore += 100;
-      feather.dead = true;
-      feather.isHit = false;
+      feathers[0].dead = true;
+      feathers[0].isHit = false;
     }
 
-    if (feather.position.y > appHeight) {
-      feather.dead = true;
+    if (feathers[0].position.y > appHeight) {
+      feathers[0].dead = true;
     }
 
-    if (feather.dead) {
-      mainScreen.removeChild(feather);
+    if (feathers[0].dead) {
+      mainScreen.removeChild(feathers[0]);
+      feathers.splice(0, 1);
     }
   }
 }
@@ -526,6 +522,7 @@ function collision(enemy) {
       hearts[hearts.length - 1].dead = true;
       player.dead = true;
       player.textures = planeSheet.dead;
+      enemy.life = 0;
       enemy.couseOfDeath = 1;
     }
     if (hearts.length > 1) {
@@ -555,14 +552,16 @@ function collisionWithBullet(bullet) {
 }
 
 function collisionFeatherWithBullet(bullet) {
-  if (
-    bullet.position.x + bullet.width / 2 >= feather.position.x &&
-    bullet.position.y - bullet.height / 2 <=
-      feather.position.y + feather.height / 2 &&
-    bullet.position.y + bullet.height / 2 >=
-      feather.position.y - feather.height / 2
-  ) {
-    feather.isHit = true;
-    bullet.dead = true;
+  for (let i = 0; i < feathers.length; i++) {
+    if (
+      bullet.position.x + bullet.width / 2 >= feathers[0].position.x &&
+      bullet.position.y - bullet.height / 2 <=
+        feathers[0].position.y + feathers[0].height / 2 &&
+      bullet.position.y + bullet.height / 2 >=
+        feathers[0].position.y - feathers[0].height / 2
+    ) {
+      feathers[0].isHit = true;
+      bullet.dead = true;
+    }
   }
 }
