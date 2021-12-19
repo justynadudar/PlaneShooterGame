@@ -56,8 +56,6 @@ window.onload = function () {
   mainScreen = new PIXI.Container();
   endScreen = new PIXI.Container();
   createTitleScreen();
-  // createEndScreen();
-  // createMainScreen();
 };
 
 function createTitleScreen() {
@@ -89,7 +87,7 @@ function createMainScreen() {
   createPinkEnemySheet();
   createGreenEnemySheet();
   createFeatherSheet();
-  plane1 = createPlayer(app.loader.resources["plane1"].texture);
+  createPlayer();
   if (playerScoreObject == null) playerScoreObject = createText();
   createHearts();
 
@@ -211,7 +209,7 @@ function createFeatherSheet() {
   ];
 }
 
-function createPlayer(texture) {
+function createPlayer() {
   player = new PIXI.AnimatedSprite(planeSheet.flying);
   player.anchor.set(0.5);
   player.animationSpeed = 0.3;
@@ -396,8 +394,8 @@ function updateEnemy() {
       }, 300);
     }
 
-    // enemy attac
-    if (enemies[i].position.x < appWidth) {
+    // enemy attack - AI
+    if (enemies[i].position.x < appWidth && enemies[i].life > 0) {
       enemies[i].position.y +=
         (player.position.y - enemies[i].position.y) / player.position.y;
     }
