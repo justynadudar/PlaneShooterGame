@@ -396,6 +396,12 @@ function updateEnemy() {
       }, 300);
     }
 
+    // enemy attac
+    if (enemies[i].position.x < appWidth) {
+      enemies[i].position.y +=
+        (player.position.y - enemies[i].position.y) / player.position.y;
+    }
+
     // enemy is off-screen
     if (enemies[i].position.x < -enemies[i].width) {
       enemies[i].dead = true;
@@ -514,9 +520,9 @@ function collision(enemy) {
     enemy.life > 0 &&
     player.position.x + player.width / 2 >=
       enemy.position.x - enemy.width / 2 &&
-    player.position.y - player.height / 2 <=
+    player.position.y - player.height / 4 <=
       enemy.position.y + enemy.height / 2 &&
-    player.position.y + player.height / 2 >= enemy.position.y - enemy.height / 2
+    player.position.y + player.height / 4 >= enemy.position.y - enemy.height / 2
   ) {
     if (hearts.length == 1) {
       hearts[hearts.length - 1].dead = true;
