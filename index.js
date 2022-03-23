@@ -66,12 +66,19 @@ function createTitleScreen() {
   let button = new PIXI.Sprite.from("images/playButton.png");
   button.anchor.set(0.5);
   button.x = appWidth / 2;
-  button.y = appHeight / 2.5;
+  button.y = appHeight / 2.8;
   button.scale.set(2, 2);
   button.interactive = true;
   button.buttonMode = true;
   button.defaultCursor = "pointer";
   titleScreen.addChild(button);
+
+  let legend = new PIXI.Sprite.from("images/legend.png");
+  legend.anchor.set(0.5);
+  legend.x = appWidth / 2;
+  legend.y = appHeight / 1.5;
+  legend.scale.set(0.2, 0.2);
+  titleScreen.addChild(legend);
 
   button.on("click", () => {
     createMainScreen();
@@ -94,8 +101,6 @@ function createMainScreen() {
   // keybord event handlers
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
-
-  app.ticker.add(gameLoop);
 }
 
 function createEndScreen() {
@@ -120,12 +125,13 @@ function createEndScreen() {
   playAgainButton.defaultCursor = "pointer";
   endScreen.addChild(playAgainButton);
 
+  // remove enemy
+  for (let i = 0; i < enemies.length; i++) {
+    mainScreen.removeChild(enemies[i]);
+  }
+  enemies.splice(0, enemies.length);
+
   playAgainButton.on("click", () => {
-    // remove enemy
-    for (let i = 0; i < enemies.length; i++) {
-      mainScreen.removeChild(enemies[i]);
-      enemies.splice(i, 1);
-    }
     createMainScreen();
   });
 }
@@ -282,7 +288,7 @@ function createGreenEnemy() {
 }
 
 function createText() {
-  let scoreText = new PIXI.Text("Score: ");
+  let scoreText = new PIXI.Text("Scores: ");
   scoreText.anchor.set(0.5);
   scoreText.x = 50;
   scoreText.y = appHeight - 40;
@@ -343,6 +349,9 @@ function updateBg() {
 function updatePlayer() {
   if (player.dead) {
     player.y += 1;
+    // remove event handlers
+    window.removeEventListener("keydown", keyDown);
+    window.removeEventListener("keyup", keyUp);
   }
   if (player.y - player.height > appHeight) {
     mainScreen.removeChild(player);
@@ -452,7 +461,7 @@ function updateFeather() {
       let feather = createFeather();
       feathers.push(feather);
       isHereFeather = false;
-    }, Math.floor(Math.random() * 4000) + 2000);
+    }, Math.floor(Math.random() * 200000) + 2000);
   }
 
   for (let i = 0; i < feathers.length; i++) {
